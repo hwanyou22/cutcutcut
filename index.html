@@ -1135,14 +1135,23 @@ function stopPreview() {
 video.addEventListener('ended', stopPreview);
 
 // ── 저장 ─────────────────────────────────────────────────────
-// iOS Safari  → canvas + requestAnimationFrame (프레임 완벽 동기)
-// Android/PC  → video.captureStream() + MediaRecorder
+// iOS / 데스크탑 Safari → canvas + requestAnimationFrame (captureStream 미지원)
+// Android / PC Chrome / Firefox → video.captureStream() + MediaRecorder
 
 function isIOS() {
   return (
     /iPad|iPhone|iPod/.test(navigator.userAgent) ||
     (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
   ) && !window.MSStream;
+}
+
+// 데스크탑 Safari도 video.captureStream() 미지원 → canvas 경로 사용
+function isSafari() {
+  return /Safari/.test(navigator.userAgent) && !/Chrome|CriOS|FxiOS/.test(navigator.userAgent);
+}
+
+function needsCanvas() {
+  return isIOS() || isSafari();
 }
 
 // 저장 전 미리 seek해두기 (버튼 반응 빠르게)
@@ -1164,7 +1173,7 @@ async function doExport() {
   isExporting = true; btnSave.disabled = true;
   showStatus('info', null, `✂ ${startTime.toFixed(2)}s ~ ${(startTime+selectedDur).toFixed(2)}s 저장 중...`);
   try {
-    if (isIOS()) {
+    if (needsCanvas()) {
       await exportCanvas();
     } else {
       await exportCapture();
@@ -1178,7 +1187,7 @@ async function doExport() {
   }
 }
 
-/* ── iOS: canvas + requestAnimationFrame (버벅임 없음) ── */
+/* ── iOS / Safari: canvas + requestAnimationFrame (captureStream 미지원 대응) ── */
 function exportCanvas() {
   return new Promise((resolve, reject) => {
     const W = video.videoWidth || 1280, H = video.videoHeight || 720;
@@ -1294,6 +1303,7 @@ function downloadBlob(blob, name) {
     // blob은 5분 후 해제
     setTimeout(() => { URL.revokeObjectURL(url); pendingBlobUrl = null; }, 300000);
   } else {
+    // 데스크탑 Safari 포함 — a.click() + download 속성은 데스크탑에서 정상 작동
     const a = document.createElement('a');
     a.href = url; a.download = name; a.click();
     setTimeout(() => URL.revokeObjectURL(url), 5000);
