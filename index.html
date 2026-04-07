@@ -6,6 +6,8 @@
 <title>cutcutcut</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Jost:wght@300;400;500;600&family=Space+Mono:wght@400;700&family=Gowun+Dodum&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.15/dist/umd/ffmpeg.js"></script>
+<script src="https://unpkg.com/@ffmpeg/util@0.12.1/dist/umd/index.js"></script>
 
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -917,6 +919,46 @@ const QUALITY_PRESETS = {
   max:     { video: 80_000_000, audio: 320_000 },
 };
 
+// ── FFmpeg.wasm ─────────────────────────────────────────────
+let ffmpegInst = null;
+let ffmpegReady = false;
+let ffmpegLoading = false;
+
+async function initFFmpeg() {
+  if (ffmpegReady) return true;
+  if (ffmpegLoading) {
+    // 이미 로딩 중이면 완료까지 대기
+    while (ffmpegLoading) await new Promise(r => setTimeout(r, 100));
+    return ffmpegReady;
+  }
+  ffmpegLoading = true;
+  try {
+    const { FFmpeg } = window.FFmpegWASM || {};
+    const { toBlobURL } = window.FFmpegUtil || {};
+    if (!FFmpeg || !toBlobURL) throw new Error('FFmpeg.wasm 스크립트 로드 실패');
+
+    ffmpegInst = new FFmpeg();
+    ffmpegInst.on('progress', ({ progress }) => {
+      loadFill.style.width = Math.min(Math.round(progress * 100), 99) + '%';
+    });
+    ffmpegInst.on('log', ({ message }) => console.debug('[ffmpeg]', message));
+
+    const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
+    await ffmpegInst.load({
+      coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
+      wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
+    });
+    ffmpegReady = true;
+    ffmpegLoading = false;
+    return true;
+  } catch(e) {
+    console.warn('FFmpeg.wasm 초기화 실패 — MediaRecorder로 전환:', e);
+    ffmpegReady = false;
+    ffmpegLoading = false;
+    return false;
+  }
+}
+
 const PX_PER_SEC = 90, THUMB_COUNT = 22;
 
 // ── DOM ─────────────────────────────────────────────────────
@@ -1027,6 +1069,9 @@ async function loadVideo(file) {
   videoDuration = video.duration;
   tlTotal.textContent = `전체 ${videoDuration.toFixed(1)}초`;
   durBadgeTime.textContent = `${videoDuration.toFixed(1)}초`;
+
+  // FFmpeg.wasm 백그라운드 프리로드
+  if (!ffmpegReady && !ffmpegLoading) initFFmpeg().catch(() => {});
 
   checkLengthWarning();
   buildPlaceholders();
@@ -1244,98 +1289,81 @@ btnSave.addEventListener('click', doExport);
 async function doExport() {
   if (!videoFile || isExporting || btnSave.disabled) return;
   stopPreview();
-  if (!window.MediaRecorder) {
-    showStatus('error', '최신 Safari 또는 Chrome을 사용해 주세요.');
+
+  if (!window.MediaRecorder && !window.FFmpegWASM) {
+    showStatus('error', '최신 Chrome / Safari를 사용해 주세요.');
     return;
   }
   isExporting = true; btnSave.disabled = true;
   showStatus('info', null, `✂ ${startTime.toFixed(2)}s ~ ${(startTime+selectedDur).toFixed(2)}s 저장 중...`);
   try {
-    if (isIOS()) {
-      await exportCanvas();
-    } else {
-      await exportCapture();
-    }
+    await exportWithFFmpeg();
   } catch(err) {
-    console.error(err);
-    loadFill.style.width = '0%';
-    showStatus('error', `저장 실패: ${err.message || '다시 시도해주세요.'}`);
+    console.error('FFmpeg 내보내기 실패, MediaRecorder로 재시도:', err);
+    // FFmpeg 실패 시 iOS가 아닌 경우에만 MediaRecorder 시도
+    if (!isIOS() && window.MediaRecorder) {
+      try {
+        await exportCapture();
+      } catch(err2) {
+        console.error(err2);
+        loadFill.style.width = '0%';
+        showStatus('error', `저장 실패: ${err2.message || '다시 시도해주세요.'}`);
+      }
+    } else {
+      loadFill.style.width = '0%';
+      showStatus('error', `저장 실패: ${err.message || '다시 시도해주세요.'}`);
+    }
   } finally {
     isExporting = false; btnSave.disabled = false;
   }
 }
 
-/* ── iOS: canvas + requestAnimationFrame (버벅임 없음) ── */
-function exportCanvas() {
-  return new Promise((resolve, reject) => {
-    const W = video.videoWidth || 1280, H = video.videoHeight || 720;
-    const canvas = document.createElement('canvas');
-    canvas.width = W; canvas.height = H;
-    const ctx = canvas.getContext('2d');
+/* ── FFmpeg.wasm: 진짜 트리밍 (스트림 복사, 재인코딩 없음) ── */
+async function exportWithFFmpeg() {
+  const { fetchFile } = window.FFmpegUtil || {};
+  if (!fetchFile) throw new Error('FFmpegUtil not available');
 
-    let stream;
-    try { stream = canvas.captureStream(30); } catch(e) { return reject(e); }
+  // ① FFmpeg 초기화 (이미 됐으면 즉시 통과)
+  showStatus('info', null, ffmpegReady ? `✂ ${startTime.toFixed(2)}s ~ ${(startTime+selectedDur).toFixed(2)}s 저장 중...` : '⚙ FFmpeg 로딩 중… (첫 실행만 수 초 소요)');
+  const ok = await initFFmpeg();
+  if (!ok) throw new Error('FFmpeg 초기화 실패');
 
-    // iOS Safari가 지원하는 코덱 순서대로
-    const mimes = ['video/mp4;codecs=avc1','video/mp4','video/webm;codecs=vp8','video/webm'];
-    const mime = mimes.find(t => { try { return MediaRecorder.isTypeSupported(t); } catch(_){return false;} }) || '';
-    const ext  = mime.includes('mp4') ? 'mp4' : 'webm';
+  showStatus('info', null, `✂ ${startTime.toFixed(2)}s ~ ${(startTime+selectedDur).toFixed(2)}s 저장 중...`);
 
-    let rec;
-    try { rec = new MediaRecorder(stream, mime ? {mimeType: mime, videoBitsPerSecond: 8_000_000} : {}); }
-    catch(e) { return reject(e); }
+  // ② 입력 파일 확장자 추출
+  const rawExt = (videoFile.name.match(/\.([a-z0-9]+)$/i)?.[1] || 'mp4').toLowerCase();
+  const inputName  = `in.${rawExt}`;
+  const outputName = 'out.mp4';
 
-    const chunks = [];
-    let rafId = null, recStarted = false;
-    const endAt = startTime + selectedDur;
+  // ③ 가상 FS에 쓰기
+  await ffmpegInst.writeFile(inputName, await fetchFile(videoFile));
 
-    rec.ondataavailable = e => { if (e.data.size > 0) chunks.push(e.data); };
-    rec.onstop = () => {
-      if (rafId) cancelAnimationFrame(rafId);
-      loadFill.style.width = '0%';
-      video.pause();
-      const blob = new Blob(chunks, {type: mime || 'video/mp4'});
-      const fname = `cutcutcut_${startTime.toFixed(2)}s-${selectedDur}s.${ext}`;
-      if (isIOS()) {
-        downloadBlob(blob, fname); // iOS: 새 탭 + 안내 메시지 표시
-        showPostPanel(ext);
-      } else {
-        downloadBlob(blob, fname);
-        hideStatus(); showPostPanel(ext);
-      }
-      resolve();
-    };
-    rec.onerror = e => reject(e.error || e);
+  // ④ 트리밍 실행 (-ss before -i = 빠른 키프레임 탐색)
+  const args = [
+    '-ss', startTime.toFixed(6),
+    '-t',  selectedDur.toFixed(6),
+    '-i',  inputName,
+    '-c',  'copy',            // 스트림 복사 (빠름)
+    '-avoid_negative_ts', 'make_zero',
+    '-movflags', '+faststart',
+  ];
+  if (!includeAudio) args.push('-an');
+  args.push('-y', outputName);
 
-    function drawLoop() {
-      const ct = video.currentTime;
-      ctx.drawImage(video, 0, 0, W, H);
-      const progress = Math.min((ct - startTime) / selectedDur, 1);
-      loadFill.style.width = (progress * 100) + '%';
+  await ffmpegInst.exec(args);
 
-      if (ct >= endAt - 0.04 || video.ended) {
-        rec.stop();
-        return;
-      }
-      rafId = requestAnimationFrame(drawLoop);
-    }
+  // ⑤ 출력 읽기
+  const data = await ffmpegInst.readFile(outputName);
+  const blob = new Blob([data.buffer], { type: 'video/mp4' });
 
-    // 이미 seek 됐으면 바로 시작, 아니면 seek 후 시작
-    const doStart = () => {
-      video.muted = !includeAudio;
-      rec.start(200);
-      recStarted = true;
-      video.play().catch(reject);
-      rafId = requestAnimationFrame(drawLoop);
-    };
+  // ⑥ 가상 FS 정리
+  try { await ffmpegInst.deleteFile(inputName); } catch(_) {}
+  try { await ffmpegInst.deleteFile(outputName); } catch(_) {}
 
-    if (Math.abs(video.currentTime - startTime) < 0.1) {
-      doStart();
-    } else {
-      video.currentTime = startTime;
-      video.addEventListener('seeked', doStart, {once: true});
-    }
-  });
+  loadFill.style.width = '0%';
+  downloadBlob(blob, `cutcutcut_${startTime.toFixed(2)}s-${selectedDur}s.mp4`);
+  hideStatus();
+  showPostPanel('mp4');
 }
 
 /* ── Android / Desktop: 원본 해상도 숨김 영상 + 고비트레이트 ── */
