@@ -670,7 +670,6 @@ body.light .sel-win {
 }
 .status-row.info    { display:flex; background:rgba(255,92,53,0.08); border:1px solid rgba(255,92,53,0.2); color:var(--cut2); }
 .status-row.error   { display:flex; background:rgba(255,92,53,0.08); border:1px solid rgba(255,92,53,0.25); color:var(--cut); }
-.status-row.ok      { display:flex; flex-direction:column; align-items:flex-start; background:rgba(74,222,128,0.07); border:1px solid rgba(74,222,128,0.2); color:var(--green); }
 
 @keyframes spin { to { transform:rotate(360deg); } }
 .spinner {
@@ -683,24 +682,7 @@ body.light .sel-win {
   display: inline-block;
 }
 
-#ios-save-btn {
-  width: 100%;
-  padding: 15px;
-  background: var(--cut);
-  border: none;
-  border-radius: 12px;
-  color: #fff;
-  font-family: 'Syne', sans-serif;
-  font-size: 15px; font-weight: 700;
-  letter-spacing: 0.5px;
-  text-decoration: none;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  transition: background 0.15s;
-}
-#ios-save-btn:hover { background: var(--cut2); }
+/* ── FOOTER ── */
 footer {
   padding: 14px 24px;
   text-align: center;
@@ -798,10 +780,6 @@ footer {
       <div class="post-check">✓</div>
       <div class="post-title">저장됐어요!</div>
       <div class="post-info" id="post-info"></div>
-      <a id="ios-save-btn" style="display:none;" target="_blank"
-         class="btn-save" style="width:100%;text-decoration:none;justify-content:center;">
-        📥 영상 열고 저장하기
-      </a>
       <div class="post-actions">
         <button class="post-btn post-btn-again" id="btn-again">이 영상에서 또 편집<small>같은 영상, 다른 구간</small></button>
         <button class="post-btn post-btn-next" id="btn-next">다음 영상 불러오기<small>새 파일 선택</small></button>
@@ -811,7 +789,7 @@ footer {
   </div>
 </main>
 
-<footer>CutCut · 정확한 길이로, 딱 잘라요</footer>
+<footer>CutCutCut · 정확한 길이로, 딱 잘라요</footer>
 
 <script>
 // ── 인사말 ─────────────────────────────────────────────────
@@ -833,7 +811,6 @@ let isPlaying = false, playTimer = null;
 let isExporting = false, hasDragged = false;
 let includeAudio = false;   // 기본값: 소리 없음
 let isLight = false;         // 기본값: 다크모드
-let pendingBlobUrl = null, pendingBlobName = null;
 
 const PX_PER_SEC = 90, THUMB_COUNT = 22;
 
@@ -865,7 +842,6 @@ const postPanel   = $('post-panel');
 const postInfo    = $('post-info');
 const btnAgain    = $('btn-again');
 const btnNext     = $('btn-next');
-const iosSaveBtn  = $('ios-save-btn');
 const newFileBtn  = $('new-file-btn');
 const dragHint    = $('drag-hint');
 const actionsEl   = $('actions');
@@ -1135,23 +1111,11 @@ function stopPreview() {
 video.addEventListener('ended', stopPreview);
 
 // ── 저장 ─────────────────────────────────────────────────────
-// iOS / 데스크탑 Safari → canvas + requestAnimationFrame (captureStream 미지원)
-// Android / PC Chrome / Firefox → video.captureStream() + MediaRecorder
+// iOS Safari  → canvas + requestAnimationFrame (프레임 완벽 동기)
+// Android/PC  → video.captureStream() + MediaRecorder
 
 function isIOS() {
-  return (
-    /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-    (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
-  ) && !window.MSStream;
-}
-
-// 데스크탑 Safari도 video.captureStream() 미지원 → canvas 경로 사용
-function isSafari() {
-  return /Safari/.test(navigator.userAgent) && !/Chrome|CriOS|FxiOS/.test(navigator.userAgent);
-}
-
-function needsCanvas() {
-  return isIOS() || isSafari();
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 }
 
 // 저장 전 미리 seek해두기 (버튼 반응 빠르게)
@@ -1173,7 +1137,7 @@ async function doExport() {
   isExporting = true; btnSave.disabled = true;
   showStatus('info', null, `✂ ${startTime.toFixed(2)}s ~ ${(startTime+selectedDur).toFixed(2)}s 저장 중...`);
   try {
-    if (needsCanvas()) {
+    if (isIOS()) {
       await exportCanvas();
     } else {
       await exportCapture();
@@ -1187,7 +1151,7 @@ async function doExport() {
   }
 }
 
-/* ── iOS / Safari: canvas + requestAnimationFrame (captureStream 미지원 대응) ── */
+/* ── iOS: canvas + requestAnimationFrame (버벅임 없음) ── */
 function exportCanvas() {
   return new Promise((resolve, reject) => {
     const W = video.videoWidth || 1280, H = video.videoHeight || 720;
@@ -1217,7 +1181,7 @@ function exportCanvas() {
       loadFill.style.width = '0%';
       video.pause();
       downloadBlob(new Blob(chunks, {type: mime || 'video/mp4'}),
-        `cutcut_${startTime.toFixed(2)}s-${selectedDur}s.${ext}`);
+        `cutcutcut_${startTime.toFixed(2)}s-${selectedDur}s.${ext}`);
       hideStatus(); showPostPanel(ext); resolve();
     };
     rec.onerror = e => reject(e.error || e);
@@ -1272,7 +1236,7 @@ function exportCapture() {
       rec.ondataavailable = e => { if(e.data.size>0) chunks.push(e.data); };
       rec.onstop = () => {
         loadFill.style.width = '0%';
-        downloadBlob(new Blob(chunks,{type:mime}), `cutcut_${startTime.toFixed(2)}s-${selectedDur}s.${ext}`);
+        downloadBlob(new Blob(chunks,{type:mime}), `cutcutcut_${startTime.toFixed(2)}s-${selectedDur}s.${ext}`);
         hideStatus(); showPostPanel(ext); resolve();
       };
       rec.onerror = e => reject(e.error || e);
@@ -1294,20 +1258,9 @@ function exportCapture() {
 }
 
 function downloadBlob(blob, name) {
-  const url = URL.createObjectURL(blob);
-  if (isIOS()) {
-    // iOS: async 컨텍스트에서 window.open/a.click 모두 차단됨
-    // → 사용자가 직접 탭할 수 있는 버튼을 post-panel에 노출
-    pendingBlobUrl  = url;
-    pendingBlobName = name;
-    // blob은 5분 후 해제
-    setTimeout(() => { URL.revokeObjectURL(url); pendingBlobUrl = null; }, 300000);
-  } else {
-    // 데스크탑 Safari 포함 — a.click() + download 속성은 데스크탑에서 정상 작동
-    const a = document.createElement('a');
-    a.href = url; a.download = name; a.click();
-    setTimeout(() => URL.revokeObjectURL(url), 5000);
-  }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = name; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
 }
 
 // ── 저장 후 패널 ─────────────────────────────────────────────
@@ -1315,25 +1268,10 @@ function showPostPanel(ext) {
   const end = (startTime+selectedDur).toFixed(2);
   postInfo.textContent =
     `${startTime.toFixed(2)}s ~ ${end}s · ${selectedDur}초 · ${ext.toUpperCase()} · ${includeAudio?'🔊 소리 포함':'🔇 무음'}`;
-  if (isIOS() && pendingBlobUrl) {
-    iosSaveBtn.href = pendingBlobUrl;
-    iosSaveBtn.style.display = 'flex';
-    postInfo.insertAdjacentHTML('afterend',
-      '<div style="font-size:12px;color:var(--dim);margin-top:-8px;">탭 → 영상 재생 → 공유버튼(□↑) → 파일에 저장</div>');
-  } else {
-    iosSaveBtn.style.display = 'none';
-  }
   postPanel.style.display = 'flex';
   actionsEl.style.display = 'none';
 }
-function hidePostPanel() {
-  postPanel.style.display='none';
-  actionsEl.style.display='';
-  iosSaveBtn.style.display='none';
-  // 안내 문구 제거
-  const hint = postPanel.querySelector('div[style*="탭 →"]');
-  if (hint) hint.remove();
-}
+function hidePostPanel() { postPanel.style.display='none'; actionsEl.style.display=''; }
 
 btnAgain.addEventListener('click', () => {
   hidePostPanel(); hideStatus();
