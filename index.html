@@ -1294,9 +1294,16 @@ function exportCanvas() {
       if (rafId) cancelAnimationFrame(rafId);
       loadFill.style.width = '0%';
       video.pause();
-      downloadBlob(new Blob(chunks, {type: mime || 'video/mp4'}),
-        `cutcutcut_${startTime.toFixed(2)}s-${selectedDur}s.${ext}`);
-      hideStatus(); showPostPanel(ext); resolve();
+      const blob = new Blob(chunks, {type: mime || 'video/mp4'});
+      const fname = `cutcutcut_${startTime.toFixed(2)}s-${selectedDur}s.${ext}`;
+      if (isIOS()) {
+        downloadBlob(blob, fname); // iOS: 새 탭 + 안내 메시지 표시
+        showPostPanel(ext);
+      } else {
+        downloadBlob(blob, fname);
+        hideStatus(); showPostPanel(ext);
+      }
+      resolve();
     };
     rec.onerror = e => reject(e.error || e);
 
@@ -1401,9 +1408,22 @@ function exportCapture() {
 }
 
 function downloadBlob(blob, name) {
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob); a.download = name; a.click();
-  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  const url = URL.createObjectURL(blob);
+
+  if (isIOS()) {
+    // iOS Safari는 <a download> 미지원 → 새 탭에서 열고 안내
+    const win = window.open(url, '_blank');
+    if (!win) {
+      // 팝업 차단된 경우 직접 이동
+      location.href = url;
+    }
+    showStatus('info', null, '영상이 새 탭에서 열렸어요. 영상을 길게 눌러 → "비디오 저장"을 선택하세요.');
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  } else {
+    const a = document.createElement('a');
+    a.href = url; a.download = name; a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+  }
 }
 
 // ── 저장 후 패널 ─────────────────────────────────────────────
