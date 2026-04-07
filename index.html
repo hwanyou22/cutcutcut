@@ -735,6 +735,34 @@ footer {
   letter-spacing: 0.5px;
   transition: border-color 0.3s, color 0.3s;
 }
+/* ── COFFEE BUTTON ── */
+.coffee-wrap {
+  text-align: center;
+  padding: 20px 24px 4px;
+}
+.coffee-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 22px;
+  background: none;
+  border: 1.5px solid var(--border);
+  border-radius: 50px;
+  color: var(--dim);
+  font-family: 'Jost', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s;
+  letter-spacing: 0.2px;
+}
+.coffee-btn:hover {
+  border-color: var(--cut);
+  color: var(--cut);
+  transform: translateY(-1px);
+}
+.coffee-emoji { font-size: 16px; }
 </style>
 </head>
 <body>
@@ -840,6 +868,13 @@ footer {
 
   </div>
 </main>
+
+<div class="coffee-wrap">
+  <a class="coffee-btn" href="https://qr.kakaopay.com/Ej7qhP1ou" target="_blank" rel="noopener">
+    <span class="coffee-emoji">☕</span>
+    유용하게 쓰셨다면 커피 한 잔
+  </a>
+</div>
 
 <footer>CutCutCut · 정확한 길이로, 딱 잘라요</footer>
 
