@@ -424,6 +424,49 @@ main {
 .dur-btn:hover:not(.active) { border-color: var(--dim); color: var(--text); }
 .dur-btn.disabled-dur { opacity: 0.32; cursor: not-allowed; }
 
+/* ── QUALITY BUTTONS ── */
+.quality-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.qual-btn {
+  position: relative;
+  padding: 12px 8px 10px;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  color: var(--dim);
+  font-family: 'Jost', sans-serif;
+  font-size: 13px; font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+.qual-sub {
+  font-size: 9.5px; font-weight: 400;
+  color: var(--muted);
+  letter-spacing: 0.2px;
+}
+.qual-btn.active {
+  background: var(--cut-glow);
+  border-color: var(--cut);
+  color: var(--text);
+}
+.qual-btn.active .qual-sub { color: var(--cut); }
+.qual-btn.active::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: var(--cut);
+  border-radius: 12px 12px 0 0;
+}
+.qual-btn:hover:not(.active) { border-color: var(--dim); color: var(--text); }
+
 /* ── TIMELINE ── */
 .tl-header {
   display: flex;
@@ -750,6 +793,15 @@ footer {
     </div>
 
     <div>
+      <div class="section-label">저장 화질</div>
+      <div class="quality-row">
+        <button class="qual-btn" data-q="sns">📱 SNS<span class="qual-sub">인스타·틱톡 최적</span></button>
+        <button class="qual-btn active" data-q="youtube">🎬 YouTube<span class="qual-sub">고화질 원본 유지</span></button>
+        <button class="qual-btn" data-q="max">💎 최대<span class="qual-sub">최고 품질 (파일 큼)</span></button>
+      </div>
+    </div>
+
+    <div>
       <div class="tl-header">
         <div class="tl-range" id="tl-range">0.00 — 1.00</div>
         <div class="tl-total" id="tl-total">전체 0.0초</div>
@@ -811,6 +863,13 @@ let isPlaying = false, playTimer = null;
 let isExporting = false, hasDragged = false;
 let includeAudio = false;   // 기본값: 소리 없음
 let isLight = false;         // 기본값: 다크모드
+let qualityMode = 'youtube'; // 기본값: 유튜브 화질
+
+const QUALITY_PRESETS = {
+  sns:     { video: 8_000_000,  audio: 128_000 },
+  youtube: { video: 25_000_000, audio: 192_000 },
+  max:     { video: 80_000_000, audio: 320_000 },
+};
 
 const PX_PER_SEC = 90, THUMB_COUNT = 22;
 
@@ -864,6 +923,15 @@ btnAudio.addEventListener('click', () => {
   btnAudio.dataset.tip  = includeAudio ? '소리 포함' : '소리 없음';
   btnAudio.classList.toggle('on', includeAudio);
   video.muted = !includeAudio;  // 미리보기 소리도 동기화
+});
+
+// ── 화질 버튼 ───────────────────────────────────────────────
+document.querySelectorAll('.qual-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.qual-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    qualityMode = btn.dataset.q;
+  });
 });
 
 // ── 업로드 ─────────────────────────────────────────────────
@@ -1217,43 +1285,72 @@ function exportCanvas() {
   });
 }
 
-/* ── Android / Desktop: video.captureStream() ── */
+/* ── Android / Desktop: 원본 해상도 숨김 영상 + 고비트레이트 ── */
 function exportCapture() {
   return new Promise((resolve, reject) => {
-    video.muted = !includeAudio;
-    const doRecord = () => {
-      let stream;
-      try { stream = video.captureStream ? video.captureStream() : video.mozCaptureStream(); }
-      catch(e) { return reject(e); }
-      const tracks = includeAudio
-        ? [...stream.getVideoTracks(), ...stream.getAudioTracks()] : stream.getVideoTracks();
-      const mimes = ['video/mp4;codecs=h264,aac','video/mp4;codecs=avc1','video/mp4',
-                     'video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'];
-      const mime = mimes.find(t => MediaRecorder.isTypeSupported(t)) || 'video/webm';
-      const ext  = mime.includes('mp4') ? 'mp4' : 'webm';
-      const rec  = new MediaRecorder(new MediaStream(tracks), {mimeType: mime});
-      const chunks = [];
-      rec.ondataavailable = e => { if(e.data.size>0) chunks.push(e.data); };
-      rec.onstop = () => {
-        loadFill.style.width = '0%';
-        downloadBlob(new Blob(chunks,{type:mime}), `cutcutcut_${startTime.toFixed(2)}s-${selectedDur}s.${ext}`);
-        hideStatus(); showPostPanel(ext); resolve();
-      };
-      rec.onerror = e => reject(e.error || e);
-      let elapsed = 0;
-      const iv = setInterval(() => {
-        elapsed += 0.1; loadFill.style.width = Math.min(elapsed/selectedDur*100, 100) + '%';
-      }, 100);
-      rec.start(100); video.play();
-      setTimeout(() => { clearInterval(iv); rec.stop(); video.pause(); }, selectedDur*1000+120);
-    };
+    const preset = QUALITY_PRESETS[qualityMode];
 
-    if (Math.abs(video.currentTime - startTime) < 0.1) {
-      doRecord();
-    } else {
-      video.currentTime = startTime;
-      video.addEventListener('seeked', doRecord, {once: true});
-    }
+    // 원본 해상도 캡처용 숨김 영상 (미리보기 창 크기 제약 없음)
+    const capVideo = document.createElement('video');
+    capVideo.src = URL.createObjectURL(videoFile);
+    capVideo.muted = !includeAudio;
+    capVideo.playsInline = true;
+    capVideo.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;opacity:0;pointer-events:none;';
+    document.body.appendChild(capVideo);
+
+    capVideo.addEventListener('loadedmetadata', function() {
+      const doRecord = () => {
+        let stream;
+        try { stream = capVideo.captureStream ? capVideo.captureStream() : capVideo.mozCaptureStream(); }
+        catch(e) { document.body.removeChild(capVideo); return reject(e); }
+
+        const tracks = includeAudio
+          ? [...stream.getVideoTracks(), ...stream.getAudioTracks()]
+          : stream.getVideoTracks();
+
+        const mimes = ['video/mp4;codecs=h264,aac','video/mp4;codecs=avc1','video/mp4',
+                       'video/webm;codecs=vp9','video/webm;codecs=vp8','video/webm'];
+        const mime = mimes.find(t => MediaRecorder.isTypeSupported(t)) || 'video/webm';
+        const ext  = mime.includes('mp4') ? 'mp4' : 'webm';
+
+        const recOpts = {
+          mimeType: mime,
+          videoBitsPerSecond: preset.video,
+          ...(includeAudio && { audioBitsPerSecond: preset.audio }),
+        };
+
+        let rec;
+        try { rec = new MediaRecorder(new MediaStream(tracks), recOpts); }
+        catch(e) { rec = new MediaRecorder(new MediaStream(tracks), { mimeType: mime }); }
+
+        const chunks = [];
+        rec.ondataavailable = e => { if(e.data.size > 0) chunks.push(e.data); };
+        rec.onstop = () => {
+          document.body.removeChild(capVideo);
+          loadFill.style.width = '0%';
+          downloadBlob(new Blob(chunks, {type: mime}), `cutcutcut_${startTime.toFixed(2)}s-${selectedDur}s.${ext}`);
+          hideStatus(); showPostPanel(ext); resolve();
+        };
+        rec.onerror = e => { document.body.removeChild(capVideo); reject(e.error || e); };
+
+        let elapsed = 0;
+        const iv = setInterval(() => {
+          elapsed += 0.1;
+          loadFill.style.width = Math.min(elapsed / selectedDur * 100, 100) + '%';
+        }, 100);
+
+        rec.start(100);
+        capVideo.play();
+        setTimeout(() => { clearInterval(iv); rec.stop(); capVideo.pause(); }, selectedDur * 1000 + 150);
+      };
+
+      capVideo.currentTime = startTime;
+      if (Math.abs(capVideo.currentTime - startTime) < 0.1) {
+        doRecord();
+      } else {
+        capVideo.addEventListener('seeked', doRecord, {once: true});
+      }
+    }, {once: true});
   });
 }
 
@@ -1266,8 +1363,9 @@ function downloadBlob(blob, name) {
 // ── 저장 후 패널 ─────────────────────────────────────────────
 function showPostPanel(ext) {
   const end = (startTime+selectedDur).toFixed(2);
+  const qLabel = { sns:'📱 SNS', youtube:'🎬 YouTube', max:'💎 최대' }[qualityMode];
   postInfo.textContent =
-    `${startTime.toFixed(2)}s ~ ${end}s · ${selectedDur}초 · ${ext.toUpperCase()} · ${includeAudio?'🔊 소리 포함':'🔇 무음'}`;
+    `${startTime.toFixed(2)}s ~ ${end}s · ${selectedDur}초 · ${ext.toUpperCase()} · ${qLabel} · ${includeAudio?'🔊 소리 포함':'🔇 무음'}`;
   postPanel.style.display = 'flex';
   actionsEl.style.display = 'none';
 }
