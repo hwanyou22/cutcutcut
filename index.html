@@ -390,7 +390,7 @@ main {
 }
 .dur-btn {
   position: relative;
-  padding: 16px 0 14px;
+  padding: 12px 0 10px;
   background: var(--surface);
   border: 1.5px solid var(--border);
   border-radius: 12px;
@@ -434,7 +434,7 @@ main {
 }
 .qual-btn {
   position: relative;
-  padding: 12px 8px 10px;
+  padding: 9px 8px 8px;
   background: var(--surface);
   border: 1.5px solid var(--border);
   border-radius: 12px;
@@ -596,7 +596,7 @@ body.light .sel-win {
   gap: 8px;
 }
 .btn-prev {
-  padding: 15px;
+  padding: 10px;
   background: var(--surface);
   border: 1.5px solid var(--border);
   border-radius: 12px;
@@ -609,7 +609,7 @@ body.light .sel-win {
 }
 .btn-prev:hover { border-color: var(--dim); }
 .btn-save {
-  padding: 15px;
+  padding: 10px;
   background: var(--cut);
   border: none;
   border-radius: 12px;
@@ -815,10 +815,8 @@ footer {
 
     <div>
       <div class="section-label">클립 길이</div>
-      <div class="duration-row">
+      <div class="duration-row" style="grid-template-columns:1fr;">
         <button class="dur-btn active" data-dur="1">1.0<span class="unit">초</span></button>
-        <button class="dur-btn" data-dur="1.5">1.5<span class="unit">초</span></button>
-        <button class="dur-btn" data-dur="2">2.0<span class="unit">초</span></button>
       </div>
     </div>
 
@@ -927,37 +925,44 @@ let ffmpegLoading = false;
 async function initFFmpeg() {
   if (ffmpegReady) return true;
   if (ffmpegLoading) {
-    // 이미 로딩 중이면 완료까지 대기
     while (ffmpegLoading) await new Promise(r => setTimeout(r, 100));
     return ffmpegReady;
   }
   ffmpegLoading = true;
+  updateSaveBtnState();
   try {
     const { FFmpeg } = window.FFmpegWASM || {};
     const { toBlobURL } = window.FFmpegUtil || {};
-    if (!FFmpeg || !toBlobURL) throw new Error('FFmpeg.wasm 스크립트 로드 실패');
-
+    if (!FFmpeg || !toBlobURL) throw new Error('FFmpeg.wasm 로드 실패');
     ffmpegInst = new FFmpeg();
-    ffmpegInst.on('progress', ({ progress }) => {
-      loadFill.style.width = Math.min(Math.round(progress * 100), 99) + '%';
-    });
-    ffmpegInst.on('log', ({ message }) => console.debug('[ffmpeg]', message));
-
     const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
     await ffmpegInst.load({
       coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
       wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
     });
     ffmpegReady = true;
-    ffmpegLoading = false;
-    return true;
   } catch(e) {
-    console.warn('FFmpeg.wasm 초기화 실패 — MediaRecorder로 전환:', e);
+    console.warn('FFmpeg 초기화 실패:', e);
     ffmpegReady = false;
-    ffmpegLoading = false;
-    return false;
+  }
+  ffmpegLoading = false;
+  updateSaveBtnState();
+  return ffmpegReady;
+}
+
+function updateSaveBtnState() {
+  if (!videoFile) return;
+  if (ffmpegLoading) {
+    btnSave.textContent = '⚙ 엔진 준비 중...';
+    btnSave.disabled = true;
+  } else {
+    btnSave.innerHTML = '✂ 클립 저장하기';
+    btnSave.disabled = false;
   }
 }
+
+// 페이지 로드 시 바로 FFmpeg 프리로드
+initFFmpeg().catch(() => {});
 
 const PX_PER_SEC = 90, THUMB_COUNT = 22;
 
@@ -1069,9 +1074,6 @@ async function loadVideo(file) {
   videoDuration = video.duration;
   tlTotal.textContent = `전체 ${videoDuration.toFixed(1)}초`;
   durBadgeTime.textContent = `${videoDuration.toFixed(1)}초`;
-
-  // FFmpeg.wasm 백그라운드 프리로드
-  if (!ffmpegReady && !ffmpegLoading) initFFmpeg().catch(() => {});
 
   checkLengthWarning();
   buildPlaceholders();
@@ -1290,60 +1292,51 @@ async function doExport() {
   if (!videoFile || isExporting || btnSave.disabled) return;
   stopPreview();
 
-  if (!window.MediaRecorder && !window.FFmpegWASM) {
-    showStatus('error', '최신 Chrome / Safari를 사용해 주세요.');
+  if (isIOS()) {
+    showStatus('error', '😢 아이폰에서는 저장이 지원되지 않아요. Mac Chrome 또는 안드로이드에서 사용해 주세요.');
     return;
   }
+
   isExporting = true; btnSave.disabled = true;
   showStatus('info', null, `✂ ${startTime.toFixed(2)}s ~ ${(startTime+selectedDur).toFixed(2)}s 저장 중...`);
   try {
-    await exportWithFFmpeg();
-  } catch(err) {
-    console.error('FFmpeg 내보내기 실패, MediaRecorder로 재시도:', err);
-    // FFmpeg 실패 시 iOS가 아닌 경우에만 MediaRecorder 시도
-    if (!isIOS() && window.MediaRecorder) {
-      try {
-        await exportCapture();
-      } catch(err2) {
-        console.error(err2);
-        loadFill.style.width = '0%';
-        showStatus('error', `저장 실패: ${err2.message || '다시 시도해주세요.'}`);
-      }
+    if (ffmpegReady) {
+      await exportWithFFmpeg();
     } else {
-      loadFill.style.width = '0%';
-      showStatus('error', `저장 실패: ${err.message || '다시 시도해주세요.'}`);
+      // FFmpeg 아직 준비 안 됐으면 MediaRecorder fallback
+      if (!window.MediaRecorder) { showStatus('error', '최신 Chrome을 사용해 주세요.'); return; }
+      await exportCapture();
     }
+  } catch(err) {
+    console.error(err);
+    loadFill.style.width = '0%';
+    showStatus('error', `저장 실패: ${err.message || '다시 시도해주세요.'}`);
   } finally {
-    isExporting = false; btnSave.disabled = false;
+    isExporting = false;
+    updateSaveBtnState();
   }
 }
 
-/* ── FFmpeg.wasm: 진짜 트리밍 (스트림 복사, 재인코딩 없음) ── */
+/* ── FFmpeg.wasm: 정확한 트리밍 ── */
 async function exportWithFFmpeg() {
   const { fetchFile } = window.FFmpegUtil || {};
   if (!fetchFile) throw new Error('FFmpegUtil not available');
 
-  // ① FFmpeg 초기화 (이미 됐으면 즉시 통과)
-  showStatus('info', null, ffmpegReady ? `✂ ${startTime.toFixed(2)}s ~ ${(startTime+selectedDur).toFixed(2)}s 저장 중...` : '⚙ FFmpeg 로딩 중… (첫 실행만 수 초 소요)');
-  const ok = await initFFmpeg();
-  if (!ok) throw new Error('FFmpeg 초기화 실패');
-
-  showStatus('info', null, `✂ ${startTime.toFixed(2)}s ~ ${(startTime+selectedDur).toFixed(2)}s 저장 중...`);
-
-  // ② 입력 파일 확장자 추출
   const rawExt = (videoFile.name.match(/\.([a-z0-9]+)$/i)?.[1] || 'mp4').toLowerCase();
-  const inputName  = `in.${rawExt}`;
+  const inputName = `in.${rawExt}`;
   const outputName = 'out.mp4';
 
-  // ③ 가상 FS에 쓰기
+  ffmpegInst.on('progress', ({ progress }) => {
+    loadFill.style.width = Math.min(Math.round(progress * 100), 99) + '%';
+  });
+
   await ffmpegInst.writeFile(inputName, await fetchFile(videoFile));
 
-  // ④ 트리밍 실행 (-ss before -i = 빠른 키프레임 탐색)
   const args = [
     '-ss', startTime.toFixed(6),
     '-t',  selectedDur.toFixed(6),
     '-i',  inputName,
-    '-c',  'copy',            // 스트림 복사 (빠름)
+    '-c',  'copy',
     '-avoid_negative_ts', 'make_zero',
     '-movflags', '+faststart',
   ];
@@ -1352,11 +1345,9 @@ async function exportWithFFmpeg() {
 
   await ffmpegInst.exec(args);
 
-  // ⑤ 출력 읽기
   const data = await ffmpegInst.readFile(outputName);
   const blob = new Blob([data.buffer], { type: 'video/mp4' });
 
-  // ⑥ 가상 FS 정리
   try { await ffmpegInst.deleteFile(inputName); } catch(_) {}
   try { await ffmpegInst.deleteFile(outputName); } catch(_) {}
 
