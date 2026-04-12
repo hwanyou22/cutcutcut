@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>cutcutcut</title>
+<title>1second</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Jost:wght@300;400;500;600&family=Space+Mono:wght@400;700&family=Gowun+Dodum&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.15/dist/umd/ffmpeg.js"></script>
@@ -635,23 +635,28 @@ body.light .sel-win {
 #post-panel {
   display: none;
   flex-direction: column;
-  align-items: center;
-  gap: 16px;
-  padding: 28px 24px;
+  gap: 10px;
+  padding: 14px 16px;
   background: var(--bg2);
   border: 1px solid var(--border);
   border-radius: 16px;
   width: 100%;
-  text-align: center;
   transition: background 0.3s, border-color 0.3s;
 }
-.post-check {
-  width: 52px; height: 52px;
+.post-summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.post-check-sm {
+  width: 28px; height: 28px;
   border-radius: 50%;
   background: rgba(74,222,128,0.12);
   border: 2px solid rgba(74,222,128,0.3);
   display: flex; align-items: center; justify-content: center;
-  font-size: 22px;
+  font-size: 13px;
+  flex-shrink: 0;
   animation: popIn 0.4s cubic-bezier(0.175,0.885,0.32,1.275) both;
 }
 @keyframes popIn {
@@ -660,14 +665,14 @@ body.light .sel-win {
 }
 .post-title {
   font-family: 'Syne', sans-serif;
-  font-size: 17px; font-weight: 700;
-  color: var(--text);
+  font-size: 14px; font-weight: 700;
+  color: var(--green);
 }
 .post-info {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--dim);
   font-family: 'Space Mono', monospace;
-  line-height: 1.6;
+  line-height: 1.5;
 }
 .post-actions {
   display: grid;
@@ -676,10 +681,10 @@ body.light .sel-win {
   width: 100%;
 }
 .post-btn {
-  padding: 14px 12px;
+  padding: 10px 12px;
   border-radius: 11px;
   font-family: 'Jost', sans-serif;
-  font-size: 13px; font-weight: 600;
+  font-size: 12px; font-weight: 600;
   cursor: pointer;
   transition: all 0.15s;
   line-height: 1.3;
@@ -771,7 +776,7 @@ footer {
 
 <header>
   <div class="logo-block">
-    <div class="logo">cutcutcut<span class="cut-mark"></span></div>
+    <div class="logo">1second<span class="cut-mark"></span></div>
     <div class="greeting" id="greeting"></div>
   </div>
   <div class="header-right">
@@ -813,12 +818,6 @@ footer {
 
     <div class="length-warning" id="length-warning"></div>
 
-    <div>
-      <div class="section-label">클립 길이</div>
-      <div class="duration-row" style="grid-template-columns:1fr;">
-        <button class="dur-btn active" data-dur="1">1.0<span class="unit">초</span></button>
-      </div>
-    </div>
 
     <div>
       <div class="section-label">저장 화질</div>
@@ -857,9 +856,11 @@ footer {
     </div>
 
     <div id="post-panel">
-      <div class="post-check">✓</div>
-      <div class="post-title">저장됐어요!</div>
-      <div class="post-info" id="post-info"></div>
+      <div class="post-summary">
+        <div class="post-check-sm">✓</div>
+        <div class="post-title">저장됐어요!</div>
+        <div class="post-info" id="post-info"></div>
+      </div>
       <div class="post-actions">
         <button class="post-btn post-btn-again" id="btn-again">이 영상에서 또 편집<small>같은 영상, 다른 구간</small></button>
         <button class="post-btn post-btn-next" id="btn-next">다음 영상 불러오기<small>새 파일 선택</small></button>
@@ -887,7 +888,7 @@ footer {
   </div>
 </div>
 
-<footer>CutCutCut · 정확한 길이로, 딱 잘라요</footer>
+<footer>1second · 정확한 길이로, 딱 잘라요</footer>
 
 <script>
 // ── 인사말 ─────────────────────────────────────────────────
@@ -1352,7 +1353,7 @@ async function exportWithFFmpeg() {
   try { await ffmpegInst.deleteFile(outputName); } catch(_) {}
 
   loadFill.style.width = '0%';
-  downloadBlob(blob, `cutcutcut_${startTime.toFixed(2)}s-${selectedDur}s.mp4`);
+  downloadBlob(blob, `1second_${startTime.toFixed(2)}s-${selectedDur}s.mp4`);
   hideStatus();
   showPostPanel('mp4');
 }
@@ -1400,7 +1401,7 @@ function exportCapture() {
         rec.onstop = () => {
           document.body.removeChild(capVideo);
           loadFill.style.width = '0%';
-          downloadBlob(new Blob(chunks, {type: mime}), `cutcutcut_${startTime.toFixed(2)}s-${selectedDur}s.${ext}`);
+          downloadBlob(new Blob(chunks, {type: mime}), `1second_${startTime.toFixed(2)}s-${selectedDur}s.${ext}`);
           hideStatus(); showPostPanel(ext); resolve();
         };
         rec.onerror = e => { document.body.removeChild(capVideo); reject(e.error || e); };
