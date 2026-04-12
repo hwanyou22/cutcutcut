@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>1second</title>
+<title>cutcutcut</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Jost:wght@300;400;500;600&family=Space+Mono:wght@400;700&family=Gowun+Dodum&display=swap" rel="stylesheet">
 <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.15/dist/umd/ffmpeg.js"></script>
@@ -776,7 +776,7 @@ footer {
 
 <header>
   <div class="logo-block">
-    <div class="logo">1second<span class="cut-mark"></span></div>
+    <div class="logo">cutcutcut<span class="cut-mark"></span></div>
     <div class="greeting" id="greeting"></div>
   </div>
   <div class="header-right">
@@ -888,7 +888,7 @@ footer {
   </div>
 </div>
 
-<footer>1second · 정확한 길이로, 딱 잘라요</footer>
+<footer>cutcutcut · 정확한 길이로, 딱 잘라요</footer>
 
 <script>
 // ── 인사말 ─────────────────────────────────────────────────
@@ -1353,7 +1353,7 @@ async function exportWithFFmpeg() {
   try { await ffmpegInst.deleteFile(outputName); } catch(_) {}
 
   loadFill.style.width = '0%';
-  downloadBlob(blob, `1second_${startTime.toFixed(2)}s-${selectedDur}s.mp4`);
+  downloadBlob(blob, `cutcutcut_${startTime.toFixed(2)}s-${selectedDur}s.mp4`);
   hideStatus();
   showPostPanel('mp4');
 }
@@ -1401,7 +1401,7 @@ function exportCapture() {
         rec.onstop = () => {
           document.body.removeChild(capVideo);
           loadFill.style.width = '0%';
-          downloadBlob(new Blob(chunks, {type: mime}), `1second_${startTime.toFixed(2)}s-${selectedDur}s.${ext}`);
+          downloadBlob(new Blob(chunks, {type: mime}), `cutcutcut_${startTime.toFixed(2)}s-${selectedDur}s.${ext}`);
           hideStatus(); showPostPanel(ext); resolve();
         };
         rec.onerror = e => { document.body.removeChild(capVideo); reject(e.error || e); };
