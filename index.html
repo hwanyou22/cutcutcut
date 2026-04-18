@@ -1333,12 +1333,15 @@ async function exportWithFFmpeg() {
 
   await ffmpegInst.writeFile(inputName, await fetchFile(videoFile));
 
+  // 정확히 selectedDur 초만큼 자르기 위해 재인코딩 사용.
+  // -c copy는 키프레임 경계에서만 자를 수 있어 1초보다 짧게 나올 수 있음.
   const args = [
     '-ss', startTime.toFixed(6),
     '-t',  selectedDur.toFixed(6),
     '-i',  inputName,
-    '-c',  'copy',
-    '-avoid_negative_ts', 'make_zero',
+    '-c:v', 'libx264',
+    '-c:a', 'aac',
+    '-preset', 'fast',
     '-movflags', '+faststart',
   ];
   if (!includeAudio) args.push('-an');
