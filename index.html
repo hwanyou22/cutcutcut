@@ -1334,11 +1334,12 @@ async function exportWithFFmpeg() {
   await ffmpegInst.writeFile(inputName, await fetchFile(videoFile));
 
   // 정확히 selectedDur 초만큼 자르기 위해 재인코딩 사용.
-  // -c copy는 키프레임 경계에서만 자를 수 있어 1초보다 짧게 나올 수 있음.
+  // -ss는 -i 앞(입력 옵션 = 빠른 탐색), -t는 -i 뒤(출력 옵션 = 정확한 출력 길이)
+  // -t를 -i 앞에 두면 입력 옵션으로 처리되어 인코더가 프레임을 다 비우지 못해 짧게 저장됨.
   const args = [
     '-ss', startTime.toFixed(6),
-    '-t',  selectedDur.toFixed(6),
     '-i',  inputName,
+    '-t',  selectedDur.toFixed(6),
     '-c:v', 'libx264',
     '-c:a', 'aac',
     '-preset', 'fast',
@@ -1415,9 +1416,22 @@ function exportCapture() {
           loadFill.style.width = Math.min(elapsed / selectedDur * 100, 100) + '%';
         }, 100);
 
-        rec.start(100);
+        const targetEnd = startTime + selectedDur;
+        rec.start(33); // 33ms 타임슬라이스 (약 30fps 정밀도)
         capVideo.play();
-        setTimeout(() => { clearInterval(iv); rec.stop(); capVideo.pause(); }, selectedDur * 1000 + 150);
+
+        // setTimeout 대신 currentTime 폴링으로 정확한 지점에 멈춤
+        const checkStop = () => {
+          if (capVideo.currentTime >= targetEnd - 0.020) {
+            clearInterval(iv);
+            rec.stop();
+            capVideo.pause();
+          } else {
+            requestAnimationFrame(checkStop);
+          }
+        };
+        // play()가 실제로 시작된 뒤 폴링 시작
+        capVideo.addEventListener('playing', () => requestAnimationFrame(checkStop), {once: true});
       };
 
       capVideo.currentTime = startTime;
