@@ -341,314 +341,7 @@ main {
   color: rgba(242,235,224,0.75);
 }
 
-/* 날짜 미리보기 오버레이 */
-.date-preview-overlay {
-  position: absolute;
-  font-family: 'Space Mono', monospace;
-  font-weight: 700;
-  pointer-events: none;
-  text-shadow: 2px 2px 4px rgba(0,0,0,0.8), -1px -1px 3px rgba(0,0,0,0.6);
-  transition: all 0.2s;
-  z-index: 5;
-}
 
-.length-warning {
-  display: none;
-  padding: 10px 14px;
-  border-radius: 10px;
-  font-size: 13px; font-weight: 500;
-  gap: 8px;
-  align-items: center;
-}
-.length-warning.show-warn {
-  display: flex;
-  background: rgba(255,92,53,0.08);
-  border: 1px solid rgba(255,92,53,0.25);
-  color: var(--cut2);
-}
-.length-warning.show-ok {
-  display: flex;
-  background: rgba(74,222,128,0.07);
-  border: 1px solid rgba(74,222,128,0.2);
-  color: var(--green);
-}
-
-.section-label {
-  font-size: 10.5px; font-weight: 600;
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  color: var(--dim);
-  margin-bottom: 8px;
-}
-
-.quality-row {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-}
-.qual-btn {
-  position: relative;
-  padding: 9px 8px 8px;
-  background: var(--surface);
-  border: 1.5px solid var(--border);
-  border-radius: 12px;
-  color: var(--dim);
-  font-family: 'Jost', sans-serif;
-  font-size: 13px; font-weight: 600;
-  cursor: pointer;
-  transition: all 0.18s;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-}
-.qual-sub {
-  font-size: 9.5px; font-weight: 400;
-  color: var(--muted);
-  letter-spacing: 0.2px;
-}
-.qual-btn.active {
-  background: var(--cut-glow);
-  border-color: var(--cut);
-  color: var(--text);
-}
-.qual-btn.active .qual-sub { color: var(--cut); }
-.qual-btn.active::after {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 2px;
-  background: var(--cut);
-  border-radius: 12px 12px 0 0;
-}
-.qual-btn:hover:not(.active) { border-color: var(--dim); color: var(--text); }
-
-/* ── 날짜 워터마크 섹션 ── */
-.watermark-section {
-  border: 1.5px solid var(--border);
-  border-radius: 14px;
-  overflow: hidden;
-  transition: border-color 0.2s;
-}
-.watermark-section.active {
-  border-color: var(--cut);
-}
-
-.watermark-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 16px;
-  cursor: pointer;
-  background: var(--surface);
-  transition: background 0.2s;
-  gap: 12px;
-}
-.watermark-header:hover { background: var(--bg3); }
-
-.watermark-label {
-  font-family: 'Jost', sans-serif;
-  font-size: 13px; font-weight: 600;
-  color: var(--dim);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.watermark-label .wm-icon { font-size: 16px; }
-
-.wm-toggle-switch {
-  position: relative;
-  width: 42px; height: 24px;
-  flex-shrink: 0;
-}
-.wm-toggle-switch input { display: none; }
-.wm-toggle-track {
-  position: absolute; inset: 0;
-  background: var(--muted);
-  border-radius: 12px;
-  transition: background 0.25s;
-  cursor: pointer;
-}
-.wm-toggle-track::after {
-  content: '';
-  position: absolute;
-  top: 3px; left: 3px;
-  width: 18px; height: 18px;
-  background: #fff;
-  border-radius: 50%;
-  transition: transform 0.25s;
-}
-.wm-toggle-switch input:checked + .wm-toggle-track {
-  background: var(--cut);
-}
-.wm-toggle-switch input:checked + .wm-toggle-track::after {
-  transform: translateX(18px);
-}
-
-.watermark-body {
-  display: none;
-  flex-direction: column;
-  gap: 14px;
-  padding: 16px;
-  border-top: 1px solid var(--border);
-  background: var(--bg2);
-  transition: border-color 0.2s;
-}
-.watermark-body.open { display: flex; }
-
-.wm-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.wm-row-label {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  color: var(--dim);
-  min-width: 42px;
-  flex-shrink: 0;
-}
-
-.wm-date-input {
-  flex: 1;
-  background: var(--surface);
-  border: 1.5px solid var(--border);
-  border-radius: 9px;
-  color: var(--text);
-  font-family: 'Space Mono', monospace;
-  font-size: 13px;
-  padding: 8px 12px;
-  outline: none;
-  cursor: pointer;
-  transition: border-color 0.18s;
-  -webkit-appearance: none;
-  appearance: none;
-}
-.wm-date-input:focus { border-color: var(--cut); }
-
-/* 날짜 형식 버튼 */
-.wm-fmt-group {
-  display: flex;
-  gap: 6px;
-  flex: 1;
-}
-.wm-fmt-btn {
-  flex: 1;
-  padding: 7px 6px;
-  background: var(--surface);
-  border: 1.5px solid var(--border);
-  border-radius: 8px;
-  color: var(--dim);
-  font-family: 'Space Mono', monospace;
-  font-size: 9px;
-  cursor: pointer;
-  transition: all 0.15s;
-  text-align: center;
-  line-height: 1.4;
-}
-.wm-fmt-btn.active {
-  background: var(--cut-glow);
-  border-color: var(--cut);
-  color: var(--text);
-}
-.wm-fmt-btn:hover:not(.active) { border-color: var(--dim); color: var(--text); }
-
-/* 위치 버튼 */
-.wm-pos-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 6px;
-  flex: 1;
-}
-.wm-pos-btn {
-  padding: 8px;
-  background: var(--surface);
-  border: 1.5px solid var(--border);
-  border-radius: 8px;
-  color: var(--dim);
-  font-size: 12px;
-  cursor: pointer;
-  transition: all 0.15s;
-  text-align: center;
-  font-family: 'Jost', sans-serif;
-  font-weight: 500;
-}
-.wm-pos-btn.active {
-  background: var(--cut-glow);
-  border-color: var(--cut);
-  color: var(--text);
-}
-.wm-pos-btn:hover:not(.active) { border-color: var(--dim); color: var(--text); }
-
-/* 색상 버튼 */
-.wm-color-group {
-  display: flex;
-  gap: 6px;
-  flex: 1;
-}
-.wm-color-btn {
-  flex: 1;
-  padding: 8px 6px;
-  border-radius: 8px;
-  border: 2px solid transparent;
-  cursor: pointer;
-  font-size: 11px;
-  font-family: 'Jost', sans-serif;
-  font-weight: 600;
-  transition: all 0.15s;
-  text-align: center;
-}
-.wm-color-btn[data-color="white"] {
-  background: rgba(255,255,255,0.12);
-  color: var(--text);
-  border-color: rgba(255,255,255,0.2);
-}
-.wm-color-btn[data-color="yellow"] {
-  background: rgba(255,209,102,0.15);
-  color: var(--gold);
-  border-color: rgba(255,209,102,0.3);
-}
-.wm-color-btn[data-color="black"] {
-  background: rgba(0,0,0,0.3);
-  color: #aaa;
-  border-color: rgba(255,255,255,0.1);
-}
-.wm-color-btn.active[data-color="white"] { border-color: #fff; background: rgba(255,255,255,0.2); }
-.wm-color-btn.active[data-color="yellow"] { border-color: var(--gold); background: rgba(255,209,102,0.25); }
-.wm-color-btn.active[data-color="black"] { border-color: #888; background: rgba(0,0,0,0.5); }
-
-/* 크기 버튼 */
-.wm-size-group {
-  display: flex;
-  gap: 6px;
-  flex: 1;
-}
-.wm-size-btn {
-  flex: 1;
-  padding: 8px 6px;
-  background: var(--surface);
-  border: 1.5px solid var(--border);
-  border-radius: 8px;
-  color: var(--dim);
-  font-family: 'Jost', sans-serif;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.15s;
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-}
-.wm-size-btn .sz-text { font-size: 11px; letter-spacing: 0.5px; }
-.wm-size-btn.active {
-  background: var(--cut-glow);
-  border-color: var(--cut);
-  color: var(--text);
-}
-.wm-size-btn:hover:not(.active) { border-color: var(--dim); color: var(--text); }
 
 .tl-header {
   display: flex;
@@ -984,8 +677,6 @@ footer {
         <span class="dur-badge-warn" id="dur-badge-warn"></span>
       </div>
       <div class="range-badge" id="range-badge">0.00 ~ 1.00</div>
-      <!-- 날짜 미리보기 오버레이 -->
-      <div class="date-preview-overlay" id="date-preview" style="display:none"></div>
     </div>
 
     <div class="length-warning" id="length-warning"></div>
@@ -998,66 +689,6 @@ footer {
         <button class="qual-btn" data-q="max">💎 최대<span class="qual-sub">최고 품질 (파일 큼)</span></button>
       </div>
     </div>
-
-    <!-- ── 날짜 워터마크 ── -->
-    <div class="watermark-section" id="watermark-section">
-      <div class="watermark-header" id="watermark-header">
-        <div class="watermark-label">
-          <span class="wm-icon">📅</span>
-          날짜 워터마크 (영상에 날짜 새기기)
-        </div>
-        <label class="wm-toggle-switch" onclick="event.stopPropagation()">
-          <input type="checkbox" id="wm-toggle">
-          <div class="wm-toggle-track"></div>
-        </label>
-      </div>
-      <div class="watermark-body" id="watermark-body">
-
-        <div class="wm-row">
-          <span class="wm-row-label">날짜</span>
-          <input type="date" class="wm-date-input" id="wm-date">
-        </div>
-
-        <div class="wm-row">
-          <span class="wm-row-label">형식</span>
-          <div class="wm-fmt-group">
-            <button class="wm-fmt-btn active" data-fmt="dot">2024.01.15</button>
-            <button class="wm-fmt-btn" data-fmt="dash">2024-01-15</button>
-            <button class="wm-fmt-btn" data-fmt="kr">24년 1월 15일</button>
-          </div>
-        </div>
-
-        <div class="wm-row">
-          <span class="wm-row-label">위치</span>
-          <div class="wm-pos-grid">
-            <button class="wm-pos-btn" data-pos="tl">↖ 좌상단</button>
-            <button class="wm-pos-btn active" data-pos="br">↘ 우하단</button>
-            <button class="wm-pos-btn" data-pos="bl">↙ 좌하단</button>
-            <button class="wm-pos-btn" data-pos="tr">↗ 우상단</button>
-          </div>
-        </div>
-
-        <div class="wm-row">
-          <span class="wm-row-label">색상</span>
-          <div class="wm-color-group">
-            <button class="wm-color-btn active" data-color="white">흰색</button>
-            <button class="wm-color-btn" data-color="yellow">노란색</button>
-            <button class="wm-color-btn" data-color="black">검정</button>
-          </div>
-        </div>
-
-        <div class="wm-row">
-          <span class="wm-row-label">크기</span>
-          <div class="wm-size-group">
-            <button class="wm-size-btn" data-size="small"><span class="sz-text">작게</span></button>
-            <button class="wm-size-btn active" data-size="medium"><span class="sz-text">보통</span></button>
-            <button class="wm-size-btn" data-size="large"><span class="sz-text">크게</span></button>
-          </div>
-        </div>
-
-      </div>
-    </div>
-    <!-- ── 날짜 워터마크 끝 ── -->
 
     <div>
       <div class="tl-header">
@@ -1145,31 +776,10 @@ const QUALITY_PRESETS = {
   max:     { crf: 12, preset: 'slow' },
 };
 
-// ── 워터마크 상태 ────────────────────────────────────────────
-let wmEnabled  = false;
-let wmDate     = '';
-let wmFmt      = 'dot';   // dot | dash | kr
-let wmPos      = 'br';    // tl | tr | bl | br
-let wmColor    = 'white'; // white | yellow | black
-let wmSize     = 'medium'; // small | medium | large
-
-const WM_FONTSIZE = { small: 28, medium: 42, large: 60 };
-const WM_COLORS   = { white: 'white', yellow: 'yellow', black: 'black' };
-
-function formatWmDate(dateStr, fmt) {
-  if (!dateStr) return '';
-  const [y, m, d] = dateStr.split('-');
-  if (fmt === 'dot')  return `${y}.${m}.${d}`;
-  if (fmt === 'dash') return `${y}-${m}-${d}`;
-  if (fmt === 'kr')   return `${y.slice(2)}년 ${parseInt(m)}월 ${parseInt(d)}일`;
-  return dateStr;
-}
-
 // ── FFmpeg.wasm ─────────────────────────────────────────────
 let ffmpegInst  = null;
 let ffmpegReady = false;
 let ffmpegLoading = false;
-let fontData    = null; // 워터마크용 폰트 바이너리
 
 async function initFFmpeg() {
   if (ffmpegReady) return true;
@@ -1213,18 +823,6 @@ function updateSaveBtnState() {
 initFFmpeg().catch(() => {});
 
 // 워터마크 폰트 (Space Mono TTF) 프리로드
-async function loadWmFont() {
-  if (fontData) return fontData;
-  try {
-    // Space Mono Regular (Google Fonts stable CDN)
-    const resp = await fetch('https://fonts.gstatic.com/s/spacemono/v13/i7dPIFZifjKcF5UAWdDRYEF8.ttf');
-    if (!resp.ok) throw new Error('font fetch failed');
-    fontData = new Uint8Array(await resp.arrayBuffer());
-    return fontData;
-  } catch(e) {
-    console.warn('워터마크 폰트 로드 실패 — 날짜 없이 저장합니다', e);
-    return null;
-  }
 }
 
 const PX_PER_SEC = 90, THUMB_COUNT = 22;
@@ -1263,11 +861,7 @@ const dragHint     = $('drag-hint');
 const actionsEl    = $('actions');
 const btnAudio     = $('btn-audio');
 const btnTheme     = $('btn-theme');
-const datePreview  = $('date-preview');
-const wmToggleChk  = $('wm-toggle');
-const wmBody       = $('watermark-body');
-const wmSection    = $('watermark-section');
-const wmDateInput  = $('wm-date');
+
 
 // ── 테마 토글 ───────────────────────────────────────────────
 btnTheme.addEventListener('click', () => {
@@ -1295,91 +889,6 @@ document.querySelectorAll('.qual-btn').forEach(btn => {
     qualityMode = btn.dataset.q;
   });
 });
-
-// ── 날짜 워터마크 UI ────────────────────────────────────────
-// 오늘 날짜 기본값
-(function setDefaultDate() {
-  const today = new Date();
-  const y = today.getFullYear();
-  const m = String(today.getMonth()+1).padStart(2,'0');
-  const d = String(today.getDate()).padStart(2,'0');
-  wmDate = `${y}-${m}-${d}`;
-  wmDateInput.value = wmDate;
-})();
-
-wmToggleChk.addEventListener('change', () => {
-  wmEnabled = wmToggleChk.checked;
-  wmBody.classList.toggle('open', wmEnabled);
-  wmSection.classList.toggle('active', wmEnabled);
-  updateDatePreview();
-  if (wmEnabled) loadWmFont(); // 미리 로드
-});
-
-wmDateInput.addEventListener('change', () => {
-  wmDate = wmDateInput.value;
-  updateDatePreview();
-});
-
-document.querySelectorAll('.wm-fmt-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.wm-fmt-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    wmFmt = btn.dataset.fmt;
-    updateDatePreview();
-  });
-});
-
-document.querySelectorAll('.wm-pos-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.wm-pos-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    wmPos = btn.dataset.pos;
-    updateDatePreview();
-  });
-});
-
-document.querySelectorAll('.wm-color-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.wm-color-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    wmColor = btn.dataset.color;
-    updateDatePreview();
-  });
-});
-
-document.querySelectorAll('.wm-size-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.wm-size-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    wmSize = btn.dataset.size;
-    updateDatePreview();
-  });
-});
-
-function updateDatePreview() {
-  if (!wmEnabled || !wmDate) {
-    datePreview.style.display = 'none';
-    return;
-  }
-  const text = formatWmDate(wmDate, wmFmt);
-  datePreview.textContent = text;
-  datePreview.style.display = 'block';
-
-  // 크기 (미리보기용 — 실제 저장은 영상 원본 해상도 기준)
-  const szMap = { small: '11px', medium: '16px', large: '23px' };
-  datePreview.style.fontSize  = szMap[wmSize];
-
-  // 색상
-  const colMap = { white: '#ffffff', yellow: '#ffd166', black: '#111111' };
-  datePreview.style.color     = colMap[wmColor];
-
-  // 위치
-  const pad = '12px';
-  datePreview.style.top    = (wmPos === 'tl' || wmPos === 'tr') ? pad : 'auto';
-  datePreview.style.bottom = (wmPos === 'bl' || wmPos === 'br') ? pad : 'auto';
-  datePreview.style.left   = (wmPos === 'tl' || wmPos === 'bl') ? pad : 'auto';
-  datePreview.style.right  = (wmPos === 'tr' || wmPos === 'br') ? pad : 'auto';
-}
 
 // ── 업로드 ─────────────────────────────────────────────────
 uploadZone.addEventListener('click', () => fileInput.click());
@@ -1629,35 +1138,9 @@ async function exportWithFFmpeg() {
 
   await ffmpegInst.writeFile(inputName, await fetchFile(videoFile));
 
-  // 워터마크 폰트 준비
-  let useWatermark = false;
-  if (wmEnabled && wmDate) {
-    const font = await loadWmFont();
-    if (font) {
-      await ffmpegInst.writeFile('/wm_font.ttf', font);
-      useWatermark = true;
-    }
-  }
-
-  // 비디오 필터 조합
-  // 1) trim=duration=1 → 정확히 1초 잘라냄 (키프레임 무관)
-  // 2) setpts=PTS-STARTPTS → 타임스탬프 0부터 리셋
-  // 3) (선택) drawtext → 날짜 태우기
-  let vf = `trim=duration=${selectedDur.toFixed(6)},setpts=PTS-STARTPTS`;
-
-  if (useWatermark) {
-    const text = formatWmDate(wmDate, wmFmt).replace(/'/g, "'\\''").replace(/:/g, '\\:');
-    const fs   = WM_FONTSIZE[wmSize];
-    const col  = WM_COLORS[wmColor];
-    const pad  = 20;
-
-    let x, y;
-    if      (wmPos === 'tl') { x = `${pad}`;             y = `${pad}`; }
-    else if (wmPos === 'tr') { x = `W-tw-${pad}`;        y = `${pad}`; }
-    else if (wmPos === 'bl') { x = `${pad}`;             y = `H-th-${pad}`; }
+  const vf = `trim=duration=${selectedDur.toFixed(6)},setpts=PTS-STARTPTS`;`;             y = `${pad}`; }
     else                     { x = `W-tw-${pad}`;        y = `H-th-${pad}`; } // br
 
-    vf += `,drawtext=fontfile=/wm_font.ttf:text='${text}':x=${x}:y=${y}:fontsize=${fs}:fontcolor=${col}:shadowcolor=black@0.75:shadowx=2:shadowy=2`;
   }
 
   const args = [
@@ -1680,11 +1163,9 @@ async function exportWithFFmpeg() {
 
   try { await ffmpegInst.deleteFile(inputName); } catch(_) {}
   try { await ffmpegInst.deleteFile(outputName); } catch(_) {}
-  if (useWatermark) { try { await ffmpegInst.deleteFile('/wm_font.ttf'); } catch(_) {} }
 
   loadFill.style.width = '0%';
-  const label = wmEnabled && wmDate ? `_${formatWmDate(wmDate,'dot')}` : '';
-  downloadBlob(blob, `cutcutcut_${startTime.toFixed(2)}s${label}.mp4`);
+  downloadBlob(blob, `cutcutcut_${startTime.toFixed(2)}s.mp4`);
   hideStatus();
   showPostPanel('mp4');
 }
@@ -1748,8 +1229,7 @@ function downloadBlob(blob, name) {
 function showPostPanel(ext) {
   const end = (startTime+selectedDur).toFixed(2);
   const qLabel = { sns:'📱 SNS', youtube:'🎬 YouTube', max:'💎 최대' }[qualityMode];
-  const wmLabel = (wmEnabled && wmDate) ? ` · 📅 ${formatWmDate(wmDate, wmFmt)}` : '';
-  postInfo.textContent = `${startTime.toFixed(2)}s ~ ${end}s · ${selectedDur}초 · ${ext.toUpperCase()} · ${qLabel}${wmLabel} · 🔇 무음`;
+  postInfo.textContent = `${startTime.toFixed(2)}s ~ ${end}s · ${selectedDur}초 · ${ext.toUpperCase()} · ${qLabel} · 🔇 무음`;
   postPanel.style.display = 'flex';
   actionsEl.style.display = 'none';
 }
