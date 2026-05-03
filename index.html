@@ -652,8 +652,8 @@ footer {
 
 <main>
 
-  <div id="upload-zone">
-    <input type="file" id="file-input" accept="video/*">
+  <input type="file" id="file-input" accept="video/*" style="display:none">
+  <label id="upload-zone" for="file-input">
     <div class="upload-scissors">✂️</div>
     <div class="upload-title">영상을 불러오세요</div>
     <div class="upload-desc">클릭하거나 파일을 여기로 드래그하세요<br>딱 원하는 길이로만 잘라드려요</div>
@@ -663,7 +663,7 @@ footer {
       <span class="fmt-tag">AVI</span>
       <span class="fmt-tag">WEBM</span>
     </div>
-  </div>
+  </label>
 
   <div id="editor">
 
@@ -889,8 +889,6 @@ document.querySelectorAll('.qual-btn').forEach(btn => {
 });
 
 // ── 업로드 ─────────────────────────────────────────────────
-uploadZone.addEventListener('click', () => fileInput.click());
-fileInput.addEventListener('change', e => { if (e.target.files[0]) loadVideo(e.target.files[0]); });
 uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
 uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
 uploadZone.addEventListener('drop', e => {
