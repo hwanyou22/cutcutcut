@@ -889,6 +889,7 @@ document.querySelectorAll('.qual-btn').forEach(btn => {
 });
 
 // ── 업로드 ─────────────────────────────────────────────────
+fileInput.addEventListener('change', e => { if (e.target.files[0]) loadVideo(e.target.files[0]); });
 uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
 uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
 uploadZone.addEventListener('drop', e => {
@@ -1118,7 +1119,7 @@ async function doExport() {
   }
 }
 
-/* ── FFmpeg.wasm: 정확한 트리밍 + 날짜 워터마크 ── */
+/* ── FFmpeg.wasm 트리밍 ── */
 async function exportWithFFmpeg() {
   const { fetchFile } = window.FFmpegUtil || {};
   if (!fetchFile) throw new Error('FFmpegUtil not available');
@@ -1134,10 +1135,7 @@ async function exportWithFFmpeg() {
 
   await ffmpegInst.writeFile(inputName, await fetchFile(videoFile));
 
-  const vf = `trim=duration=${selectedDur.toFixed(6)},setpts=PTS-STARTPTS`;`;             y = `${pad}`; }
-    else                     { x = `W-tw-${pad}`;        y = `H-th-${pad}`; } // br
-
-  }
+  const vf = `trim=duration=${selectedDur.toFixed(6)},setpts=PTS-STARTPTS`;
 
   const args = [
     '-ss', startTime.toFixed(6),
